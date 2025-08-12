@@ -391,6 +391,7 @@ pub enum Action {
         event: MouseEvent,
     },
     Copy,
+    SmartCopy,
     /// Confirm a prompt
     Confirm,
     /// Deny a prompt
