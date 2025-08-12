@@ -148,6 +148,8 @@ fn send_cli_action_to_server(
             None,
             default_mode,
             None,
+            None,
+            None,
         )
         .unwrap();
     }
