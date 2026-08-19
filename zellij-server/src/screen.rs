@@ -7964,7 +7964,6 @@ pub(crate) fn screen_thread_main(
                 if state_changed {
                     screen.log_and_report_session_state()?;
                 }
-                screen.unblock_input()?;
                 screen.render(None)?;
             },
             ScreenInstruction::Exit => {
