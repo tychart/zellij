@@ -92,6 +92,27 @@ For more build commands, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Configuration
 For configuring Zellij, please see the [Configuration Documentation](https://zellij.dev/documentation/configuration.html).
 
+## SmartCopy
+
+`SmartCopy` makes <kbd>Ctrl</kbd>+<kbd>C</kbd> behave intuitively in both selection and terminal contexts:
+
+- If text is highlighted in Zellij, <kbd>Ctrl</kbd>+<kbd>C</kbd> copies the selection to the clipboard and does not interrupt the running process.
+- If no text is highlighted, Zellij forwards <kbd>Ctrl</kbd>+<kbd>C</kbd> to the active pane, where it retains its standard behavior (typically sending `SIGINT` to the running process).
+
+This avoids having to remember a separate copy shortcut while preserving the familiar ability to interrupt commands. To enable it, disable automatic copying on selection and bind `SmartCopy` in your configuration:
+
+```kdl
+copy_on_select false
+
+keybinds {
+    normal {
+        bind "Ctrl c" { SmartCopy; }
+    }
+}
+```
+
+With this setup, highlighting text does not immediately copy it. The selection is copied only when <kbd>Ctrl</kbd>+<kbd>C</kbd> is pressed.
+
 ## About issues in this repository
 Issues in this repository, whether open or closed, do not necessarily indicate a problem or a bug in the software. They only indicate that the reporter wanted to communicate their experiences or thoughts to the maintainers. The Zellij maintainers do their best to go over and reply to all issue reports, but unfortunately cannot promise these will always be dealt with or even read. Your understanding is appreciated.
 
