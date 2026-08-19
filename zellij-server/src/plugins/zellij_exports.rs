@@ -129,6 +129,9 @@ macro_rules! apply_action {
             None,
             $env.default_mode.clone(),
             None,
+            None,
+            None,
+            None,
         ) {
             Ok((_, result)) => result,
             Err(e) => {
@@ -1465,6 +1468,9 @@ fn run_action(env: &PluginEnv, mut action: Action, context: BTreeMap<String, Str
             default_shell,
             None,
             default_mode,
+            None,
+            None,
+            None,
             None,
         ) {
             Ok((_should_break, result)) => {
@@ -4722,6 +4728,9 @@ fn try_edit_layout(
         env.default_shell.clone(),
         None,
         env.default_mode.clone(),
+        None,
+        None,
+        None,
         None,
     )
     .map(|_| ())

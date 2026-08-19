@@ -18,9 +18,9 @@ use uuid::Uuid;
 use zellij_utils::{
     channels::SenderWithContext,
     data::{
-        BareKey, ConnectToSession, Direction, Event, InputMode, KeyModifier, ListPanesResponse,
-        ListTabsResponse, NewPanePlacement, PaneListEntry, ResizeStrategy, TabInfo,
-        UnblockCondition,
+        BareKey, ConnectToSession, Direction, Event, InputMode, KeyModifier, KeyWithModifier,
+        ListPanesResponse, ListTabsResponse, NewPanePlacement, PaneListEntry, ResizeStrategy,
+        TabInfo, UnblockCondition,
     },
     envs,
     errors::prelude::*,
@@ -224,6 +224,9 @@ pub(crate) fn route_action(
     default_shell: Option<TerminalAction>,
     mut seen_cli_pipes: Option<&mut HashSet<String>>,
     default_mode: InputMode,
+    key_with_modifier: Option<KeyWithModifier>,
+    raw_bytes: Option<Vec<u8>>,
+    is_kitty_keyboard_protocol: Option<bool>,
     os_input: Option<Box<dyn ServerOsApi>>,
 ) -> Result<(bool, Option<ActionCompletionResult>)> {
     let mut should_break = false;
@@ -1223,6 +1226,16 @@ pub(crate) fn route_action(
                 .send_to_screen(ScreenInstruction::Copy(
                     client_id,
                     Some(NotificationEnd::new(completion_tx)),
+                ))
+                .with_context(err_context)?;
+        },
+        Action::SmartCopy => {
+            senders
+                .send_to_screen(ScreenInstruction::SmartCopy(
+                    key_with_modifier,
+                    raw_bytes,
+                    is_kitty_keyboard_protocol,
+                    client_id,
                 ))
                 .with_context(err_context)?;
         },
@@ -2315,10 +2328,13 @@ pub(crate) fn route_thread_main(
                                             s.session_configuration
                                                 .get_client_default_input_mode(&client_id),
                                             vec![Action::Write {
-                                                key_with_modifier: Some(key),
-                                                bytes: raw_bytes,
+                                                key_with_modifier: Some(key.clone()),
+                                                bytes: raw_bytes.clone(),
                                                 is_kitty_keyboard_protocol,
                                             }],
+                                            key,
+                                            raw_bytes,
+                                            is_kitty_keyboard_protocol,
                                         ));
                                     }
                                     let (kb, im, dim) =
@@ -2327,7 +2343,7 @@ pub(crate) fn route_thread_main(
                                         .get_actions_for_key_in_mode_or_default_action(
                                             im,
                                             &key,
-                                            raw_bytes,
+                                            raw_bytes.clone(),
                                             dim,
                                             is_kitty_keyboard_protocol,
                                         );
@@ -2337,10 +2353,20 @@ pub(crate) fn route_thread_main(
                                         s.session_configuration
                                             .get_client_default_input_mode(&client_id),
                                         actions,
+                                        key.clone(),
+                                        raw_bytes,
+                                        is_kitty_keyboard_protocol,
                                     ))
                                 });
-                            if let Some((senders, default_shell, client_input_mode, actions)) =
-                                dispatch_inputs
+                            if let Some((
+                                senders,
+                                default_shell,
+                                client_input_mode,
+                                actions,
+                                key,
+                                raw_bytes,
+                                is_kitty_keyboard_protocol,
+                            )) = dispatch_inputs
                             {
                                 for action in actions {
                                     // Send user input to plugin thread for logging
@@ -2360,6 +2386,9 @@ pub(crate) fn route_thread_main(
                                         default_shell.clone(),
                                         Some(&mut seen_cli_pipes),
                                         client_input_mode,
+                                        Some(key.clone()),
+                                        Some(raw_bytes.clone()),
+                                        Some(is_kitty_keyboard_protocol),
                                         Some(os_input.clone()),
                                     ) {
                                         Ok(route_action_should_break) => {
@@ -2436,6 +2465,9 @@ pub(crate) fn route_thread_main(
                                     default_shell,
                                     Some(&mut seen_cli_pipes),
                                     client_input_mode,
+                                    None,
+                                    None,
+                                    None,
                                     Some(os_input.clone()),
                                 ) {
                                     Ok(route_action_should_break) => {

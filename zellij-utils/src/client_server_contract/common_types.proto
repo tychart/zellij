@@ -285,6 +285,7 @@ message Action {
     FocusHostSessionAction focus_host_session = 145;
     ToggleHostFullscreenAction toggle_host_fullscreen = 146;
     FocusGuestSessionAction focus_guest_session = 147;
+    SmartCopyAction smart_copy = 148;
   }
 }
 
@@ -345,6 +346,7 @@ message SetDarkThemeAction {}
 message SetLightThemeAction {}
 message ToggleThemeAction {}
 message CopyAction {}
+message SmartCopyAction {}
 message ConfirmAction {}
 message DenyAction {}
 message ToggleMouseModeAction {}

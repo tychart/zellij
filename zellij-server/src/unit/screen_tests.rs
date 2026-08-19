@@ -148,6 +148,9 @@ fn send_cli_action_to_server(
             None,
             default_mode,
             None,
+            None,
+            None,
+            None,
         )
         .unwrap();
     }
@@ -174,6 +177,9 @@ fn route_arbitrary_action_to_server(
         None,
         None,
         default_mode,
+        None,
+        None,
+        None,
         None,
     )
     .unwrap();
@@ -889,6 +895,15 @@ macro_rules! log_actions_in_thread {
             })
             .unwrap()
     };
+}
+
+fn pty_write_instructions(log: &[PtyWriteInstruction]) -> Vec<PtyWriteInstruction> {
+    log.iter()
+        .filter_map(|instruction| match instruction {
+            PtyWriteInstruction::Write(..) => Some(instruction.clone()),
+            _ => None,
+        })
+        .collect()
 }
 
 fn new_tab(screen: &mut Screen, pid: u32, tab_index: usize) {
@@ -2853,6 +2868,109 @@ pub fn send_cli_move_pane_action() {
         assert_snapshot!(format!("{}", snapshot));
     }
     assert_snapshot!(format!("{}", snapshot_count));
+}
+
+#[test]
+pub fn smart_copy_sends_ctrl_c_when_no_selection_exists() {
+    let size = Size {
+        cols: 121,
+        rows: 20,
+    };
+    let client_id = 1;
+    let mut mock_screen = MockScreen::new(size);
+    mock_screen.config.options.copy_on_select = Some(false);
+    let pty_writer_receiver = mock_screen.pty_writer_receiver.take().unwrap();
+    let screen_thread = mock_screen.run(Some(TiledPaneLayout::default()), vec![]);
+    let received_pty_instructions = Arc::new(Mutex::new(vec![]));
+    let pty_writer_thread = log_actions_in_thread!(
+        received_pty_instructions,
+        PtyWriteInstruction::Exit,
+        pty_writer_receiver
+    );
+
+    let _ = mock_screen.to_screen.send(ScreenInstruction::SmartCopy(
+        None,
+        Some(vec![3]),
+        Some(false),
+        client_id,
+    ));
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    mock_screen.teardown(vec![pty_writer_thread, screen_thread]);
+
+    let pty_writes = pty_write_instructions(&received_pty_instructions.lock().unwrap());
+    assert_eq!(pty_writes.len(), 1);
+    assert!(matches!(
+        pty_writes.first(),
+        Some(PtyWriteInstruction::Write(bytes, terminal_id, None))
+            if bytes == &vec![3] && *terminal_id == 0
+    ));
+}
+
+#[test]
+pub fn smart_copy_copies_selection_once_then_falls_back_to_ctrl_c() {
+    let size = Size {
+        cols: 121,
+        rows: 20,
+    };
+    let client_id = 1;
+    let mut mock_screen = MockScreen::new(size);
+    mock_screen.config.options.copy_on_select = Some(false);
+    let pty_writer_receiver = mock_screen.pty_writer_receiver.take().unwrap();
+    let screen_thread = mock_screen.run(Some(TiledPaneLayout::default()), vec![]);
+    let received_pty_instructions = Arc::new(Mutex::new(vec![]));
+    let pty_writer_thread = log_actions_in_thread!(
+        received_pty_instructions,
+        PtyWriteInstruction::Exit,
+        pty_writer_receiver
+    );
+
+    let _ = mock_screen.to_screen.send(ScreenInstruction::PtyBytes(
+        0,
+        b"Selectable text content here".to_vec(),
+    ));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    let _ = mock_screen.to_screen.send(ScreenInstruction::MouseEvent(
+        MouseEvent::new_left_press_event(Position::new(1, 5)),
+        client_id,
+        None,
+    ));
+    let _ = mock_screen.to_screen.send(ScreenInstruction::MouseEvent(
+        MouseEvent::new_left_motion_event(Position::new(1, 15)),
+        client_id,
+        None,
+    ));
+    let _ = mock_screen.to_screen.send(ScreenInstruction::MouseEvent(
+        MouseEvent::new_left_release_event(Position::new(1, 15)),
+        client_id,
+        None,
+    ));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    let _ = mock_screen.to_screen.send(ScreenInstruction::SmartCopy(
+        None,
+        Some(vec![3]),
+        Some(false),
+        client_id,
+    ));
+    let _ = mock_screen.to_screen.send(ScreenInstruction::SmartCopy(
+        None,
+        Some(vec![3]),
+        Some(false),
+        client_id,
+    ));
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    mock_screen.teardown(vec![pty_writer_thread, screen_thread]);
+
+    let pty_writes = pty_write_instructions(&received_pty_instructions.lock().unwrap());
+    assert_eq!(pty_writes.len(), 1);
+    assert!(matches!(
+        pty_writes.first(),
+        Some(PtyWriteInstruction::Write(bytes, terminal_id, None))
+            if bytes == &vec![3] && *terminal_id == 0
+    ));
 }
 
 #[test]

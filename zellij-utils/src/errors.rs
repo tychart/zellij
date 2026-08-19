@@ -336,6 +336,7 @@ pub enum ScreenContext {
     MiddleMouseRelease,
     MouseEvent,
     Copy,
+    SmartCopy,
     ToggleTab,
     AddClient,
     RemoveClient,
