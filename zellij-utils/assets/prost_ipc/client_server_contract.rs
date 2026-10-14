@@ -430,6 +430,8 @@ pub mod action {
         SelectCommandAtScrollPosition(super::SelectCommandAtScrollPositionAction),
         #[prost(message, tag="151")]
         CopyLastCommandOutput(super::CopyLastCommandOutputAction),
+        #[prost(message, tag="152")]
+        SmartCopy(super::SmartCopyAction),
     }
 }
 // Action message definitions (all 92 variants)
@@ -636,6 +638,10 @@ pub struct ToggleThemeAction {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CopyAction {
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SmartCopyAction {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -1270,6 +1270,7 @@ pub(crate) fn route_action(
                     raw_bytes,
                     is_kitty_keyboard_protocol,
                     client_id,
+                    Some(NotificationEnd::new(completion_tx)),
                 ))
                 .with_context(err_context)?;
         },
@@ -2362,10 +2363,13 @@ pub(crate) fn route_thread_main(
                                             s.session_configuration
                                                 .get_client_default_input_mode(&client_id),
                                             vec![Action::Write {
-                                                key_with_modifier: Some(key),
-                                                bytes: raw_bytes,
+                                                key_with_modifier: Some(key.clone()),
+                                                bytes: raw_bytes.clone(),
                                                 is_kitty_keyboard_protocol,
                                             }],
+                                            key,
+                                            raw_bytes,
+                                            is_kitty_keyboard_protocol,
                                         ));
                                     }
                                     let (kb, im, dim) =

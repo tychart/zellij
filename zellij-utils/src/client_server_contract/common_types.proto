@@ -289,6 +289,7 @@ message Action {
     ScrollToNextPromptAction scroll_to_next_prompt = 149;
     SelectCommandAtScrollPositionAction select_command_at_scroll_position = 150;
     CopyLastCommandOutputAction copy_last_command_output = 151;
+    SmartCopyAction smart_copy = 152;
   }
 }
 
@@ -353,6 +354,7 @@ message SetDarkThemeAction {}
 message SetLightThemeAction {}
 message ToggleThemeAction {}
 message CopyAction {}
+message SmartCopyAction {}
 message ConfirmAction {}
 message DenyAction {}
 message ToggleMouseModeAction {}

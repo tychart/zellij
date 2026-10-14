@@ -627,6 +627,7 @@ pub enum ScreenInstruction {
         Option<Vec<u8>>,         // raw_bytes
         Option<bool>,            // is_kitty_keyboard_protocol
         ClientId,
+        Option<NotificationEnd>,
     ),
     AddClient(
         ClientId,
@@ -10197,6 +10198,8 @@ pub(crate) fn screen_thread_main(
                 raw_bytes,
                 is_kitty_keyboard_protocol,
                 client_id,
+                _completion_tx, // the action ends here, dropping this will release anything
+                                // waiting for it
             ) => {
                 let mut state_changed = false;
                 active_tab_and_connected_client_id!(
@@ -10235,7 +10238,6 @@ pub(crate) fn screen_thread_main(
                 if state_changed {
                     screen.log_and_report_session_state()?;
                 }
-                screen.unblock_input()?;
                 screen.render(None)?;
             },
             ScreenInstruction::Exit => {
