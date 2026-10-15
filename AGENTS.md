@@ -219,13 +219,20 @@ The original SmartCopy branch is available as `origin/pr/GoodbyeNJN/4369`. As of
 - regenerated IPC/plugin APIs and substantially changed assets
 - newer mouse handling and grapheme-cluster support
 
-Therefore, updating `origin/pr/GoodbyeNJN/4369` directly to current upstream main is not a routine conflict-resolution exercise. It should be treated as a feature reimplementation/port:
+A trial cherry-pick onto current `upstream/main` showed that the port is more practical than the raw file-count comparison suggests:
+
+- `cba6eb54` and `c07b514b` cherry-pick automatically.
+- `a0cb13eb` has conflicts in `route.rs`, `plugins/zellij_exports.rs`, and `unit/screen_tests.rs`, but the conflicts are concentrated around changed route signatures and action dispatch.
+- `e940c51f` should be applied after those conflicts are resolved.
+- The old `cba6eb54` commit also reintroduces an accidental large block of legacy mouse-handler methods in `tab/mod.rs`; do not accept that block. Restore the current upstream file and add only the `Pane::has_selection`, `Tab::has_selection`, and `Tab::reset_selection` pieces needed by SmartCopy.
+
+Recommended current-main port procedure:
 
 1. Start from a fresh current `upstream/main` worktree.
-2. Re-express the SmartCopy behavior against the current selection, input, pane, and action APIs rather than replaying the old commits verbatim.
-3. Keep the old branch as a read-only behavioral reference and use its three SmartCopy regression tests as the starting specification.
-4. Locate the current equivalents of action parsing/serialization, key dispatch, active-pane selection state, clipboard copy, and PTY input forwarding.
-5. Add current-architecture tests before adapting documentation and release packaging.
-6. Validate against current upstream CI and only then propose the upstream PR.
+2. Cherry-pick the four original SmartCopy commits individually.
+3. Resolve the concentrated routing conflicts in favor of current upstream APIs while preserving the SmartCopy key/raw-byte propagation.
+4. Restore `tab/mod.rs` and `grid.rs` to current upstream where the old commit introduces duplicate or obsolete mouse code, then add the minimal selection helpers.
+5. Use the old branch's three SmartCopy tests as the behavioral specification, adapting their constructors and route calls to current APIs.
+6. Run focused tests first, then the current upstream server/utils test suites and CI.
 
-The likely PR effort is moderate-to-large because the behavior is small but the integration points have moved substantially. The existing v0.45.1 fork is the stable deployment artifact; do not replace it with a current-main port until the new port passes its own focused and full test validation.
+The feature is therefore a feasible moderate port, not a wholesale rewrite. The existing v0.45.1 fork remains the stable deployment artifact; do not replace it until the current-main port passes validation.
