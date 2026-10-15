@@ -208,3 +208,24 @@ A PR to `zellij-org/zellij` is realistic, but the current fork implementation sh
 The hardest parts are not the basic behavior; they are agreeing on the user-facing semantics and keeping the action compatible with Zellij's evolving routing, IPC, and selection architecture. A well-scoped PR with tests and no unrelated history should be manageable, but expect review on naming, default/config behavior, key payload propagation, and whether SmartCopy belongs in core or should be implemented as a plugin/config pattern.
 
 Keep this file current whenever the release process, target matrix, dependency requirements, or upstream PR status changes.
+
+## Rebase assessment: original SmartCopy branch
+
+The original SmartCopy branch is available as `origin/pr/GoodbyeNJN/4369`. As of the current comparison, it is based on the old 0.45-era code line, while `upstream/main` is at `519a23715` and has moved through a major architectural transition. The comparison is approximately 1,457 files and 320,000 insertions, including:
+
+- the new `zellij-window` terminal/window architecture
+- major rewrites of `zellij-server/src/screen.rs`, `route.rs`, `tab/`, and their tests
+- new popup, configuration, input, selection, and UI systems
+- regenerated IPC/plugin APIs and substantially changed assets
+- newer mouse handling and grapheme-cluster support
+
+Therefore, updating `origin/pr/GoodbyeNJN/4369` directly to current upstream main is not a routine conflict-resolution exercise. It should be treated as a feature reimplementation/port:
+
+1. Start from a fresh current `upstream/main` worktree.
+2. Re-express the SmartCopy behavior against the current selection, input, pane, and action APIs rather than replaying the old commits verbatim.
+3. Keep the old branch as a read-only behavioral reference and use its three SmartCopy regression tests as the starting specification.
+4. Locate the current equivalents of action parsing/serialization, key dispatch, active-pane selection state, clipboard copy, and PTY input forwarding.
+5. Add current-architecture tests before adapting documentation and release packaging.
+6. Validate against current upstream CI and only then propose the upstream PR.
+
+The likely PR effort is moderate-to-large because the behavior is small but the integration points have moved substantially. The existing v0.45.1 fork is the stable deployment artifact; do not replace it with a current-main port until the new port passes its own focused and full test validation.
